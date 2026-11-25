@@ -1,5 +1,22 @@
 package br.ufrr.dcc.projeto.modelo;
 
-public class Mago {
+import br.ufrr.dcc.projeto.excecoes.VidaInvalidaException;
 
+public class Mago extends Heroi {
+
+    private int mana;
+
+    public Mago(String nome, int vidaMaxima, int ataque, int mana) throws VidaInvalidaException {
+        super(nome, vidaMaxima, ataque);
+        this.mana = mana;
+    }
+
+    @Override
+    public int calcularDano() {
+        return super.calcularDano() + mana / 5;
+    }
+
+    public int getMana() {
+        return mana;
+    }
 }
