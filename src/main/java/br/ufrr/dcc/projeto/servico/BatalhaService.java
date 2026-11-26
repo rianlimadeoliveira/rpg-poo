@@ -1,24 +1,56 @@
 package br.ufrr.dcc.projeto.servico;
 
+import br.ufrr.dcc.projeto.excecoes.RPGException;
+import br.ufrr.dcc.projeto.excecoes.SemEspacoException;
 import br.ufrr.dcc.projeto.modelo.Batalha;
 import br.ufrr.dcc.projeto.modelo.Heroi;
 import br.ufrr.dcc.projeto.modelo.Inimigo;
-import br.ufrr.dcc.projeto.excecoes.RPGException;
+import br.ufrr.dcc.projeto.repositorio.HeroiRepository;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-/** Fachada para iniciar e conduzir batalhas sem concentrar regras na interface. */
+/** Coordena o cadastro de herois e cria/executa as batalhas. */
 public class BatalhaService {
-    public Batalha iniciarBatalha(Heroi heroi, Inimigo inimigo) throws RPGException {
-        Batalha batalha = new Batalha(heroi, inimigo); batalha.iniciar(); return batalha;
+    private final HeroiRepository repo;
+    private final List<Batalha> batalhas;
+
+    public BatalhaService() {
+        this(new HeroiRepository());
     }
-    public void executarTurno(Batalha batalha) throws RPGException {
-        if (batalha == null) throw new RPGException("A batalha nao pode ser nula.");
-        batalha.executarTurno();
+
+    public BatalhaService(HeroiRepository repo) {
+        if (repo == null) {
+            throw new IllegalArgumentException("O repositorio nao pode ser nulo.");
+        }
+        this.repo = repo;
+        this.batalhas = new ArrayList<>();
     }
-    /** Executa ate um dos participantes ser derrotado e entrega XP ao heroi vencedor. */
-    public Heroi executarBatalha(Heroi heroi, Inimigo inimigo) throws RPGException {
-        Batalha batalha = iniciarBatalha(heroi, inimigo);
-        while (!batalha.isFinalizada()) batalha.executarTurno();
-        if (batalha.heroiVenceu()) heroi.ganharXp(inimigo.getXpRecompensa());
-        return heroi;
+
+    /** Cria a batalha e a executa em uma Thread, aguardando o seu termino. */
+    public void iniciar(Heroi h, Inimigo i) throws RPGException {
+        Batalha batalha = new Batalha(h, i);
+        batalhas.add(batalha);
+
+        Thread thread = new Thread(batalha, "batalha-" + h.getNome());
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RPGException("A batalha foi interrompida.");
+        }
+    }
+
+    public void cadastrar(Heroi h) throws SemEspacoException {
+        repo.salvar(h);
+    }
+
+    public HeroiRepository getRepo() {
+        return repo;
+    }
+
+    public List<Batalha> getBatalhas() {
+        return Collections.unmodifiableList(batalhas);
     }
 }

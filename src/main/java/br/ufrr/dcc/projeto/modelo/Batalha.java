@@ -1,34 +1,63 @@
 package br.ufrr.dcc.projeto.modelo;
 
 import br.ufrr.dcc.projeto.excecoes.RPGException;
-import java.util.Objects;
+import br.ufrr.dcc.projeto.excecoes.VidaInvalidaException;
 
-/** Estado e regras basicas de um confronto entre um heroi e um inimigo. */
-public class Batalha {
+/**
+ * Confronto entre um heroi e um inimigo. Implementa Runnable para poder ser
+ * executada em uma Thread: run() executa turnos ate um dos lados ser derrotado.
+ */
+public class Batalha implements Runnable {
     private final Heroi heroi;
     private final Inimigo inimigo;
-    private boolean iniciada;
-    private boolean finalizada;
-    public Batalha(Heroi heroi, Inimigo inimigo) {
-        this.heroi = Objects.requireNonNull(heroi, "O heroi e obrigatorio.");
-        this.inimigo = Objects.requireNonNull(inimigo, "O inimigo e obrigatorio.");
+    private volatile boolean emAndamento;
+
+    public Batalha(Heroi heroi, Inimigo inimigo) throws RPGException {
+        if (heroi == null || inimigo == null) {
+            throw new RPGException("Heroi e inimigo sao obrigatorios para a batalha.");
+        }
+        if (!heroi.estaVivo() || !inimigo.estaVivo()) {
+            throw new RPGException("Os participantes precisam estar vivos para iniciar a batalha.");
+        }
+        this.heroi = heroi;
+        this.inimigo = inimigo;
     }
-    public synchronized void iniciar() throws RPGException {
-        if (finalizada) throw new RPGException("Esta batalha ja foi finalizada.");
-        if (!heroi.estaVivo() || !inimigo.estaVivo()) throw new RPGException("Os participantes precisam estar vivos para iniciar.");
-        iniciada = true;
+
+    @Override
+    public void run() {
+        emAndamento = true;
+        try {
+            while (heroi.estaVivo() && inimigo.estaVivo()) {
+                executarTurno();
+            }
+        } catch (VidaInvalidaException e) {
+            // Nao ocorre: os atributos sao validados e o dano calculado nunca e negativo.
+            throw new IllegalStateException(e.getMessage(), e);
+        } finally {
+            emAndamento = false;
+        }
+        if (heroi.estaVivo()) {
+            heroi.ganharXp(inimigo.getXpRecompensa());
+        }
     }
-    /** Executa um turno: heroi ataca primeiro; se o inimigo sobreviver, contra-ataca. */
-    public synchronized void executarTurno() throws RPGException {
-        if (!iniciada) iniciar();
-        if (finalizada) throw new RPGException("Esta batalha ja foi finalizada.");
-        if (heroi.estaVivo() && inimigo.estaVivo()) heroi.atacar(inimigo);
-        if (inimigo.estaVivo() && heroi.estaVivo()) inimigo.atacar(heroi);
-        if (!heroi.estaVivo() || !inimigo.estaVivo()) finalizada = true;
+
+    /** Heroi ataca primeiro; se o inimigo sobreviver, contra-ataca. */
+    private void executarTurno() throws VidaInvalidaException {
+        heroi.atacar(inimigo);
+        if (inimigo.estaVivo()) {
+            inimigo.atacar(heroi);
+        }
     }
-    public synchronized boolean isFinalizada() { return finalizada; }
-    public synchronized boolean heroiVenceu() { return finalizada && heroi.estaVivo() && !inimigo.estaVivo(); }
-    public synchronized boolean inimigoVenceu() { return finalizada && !heroi.estaVivo() && inimigo.estaVivo(); }
-    public Heroi getHeroi() { return heroi; }
-    public Inimigo getInimigo() { return inimigo; }
+
+    public boolean isEmAndamento() {
+        return emAndamento;
+    }
+
+    public Heroi getHeroi() {
+        return heroi;
+    }
+
+    public Inimigo getInimigo() {
+        return inimigo;
+    }
 }

@@ -1,9 +1,17 @@
 package br.ufrr.dcc.projeto.excecoes;
 
+/** Lancada quando um valor de vida (ou de dano/cura sobre a vida) e invalido. */
 public class VidaInvalidaException extends RPGException {
-    private final int valorInformado;
-    public VidaInvalidaException(String mensagem, int valorInformado) {
-        super(mensagem); this.valorInformado = valorInformado;
+    private static final long serialVersionUID = 1L;
+
+    private final int vidaAtual;
+
+    public VidaInvalidaException(String msg, int vidaAtual) {
+        super(msg);
+        this.vidaAtual = vidaAtual;
     }
-    public int getValorInformado() { return valorInformado; }
+
+    public int getVidaAtual() {
+        return vidaAtual;
+    }
 }

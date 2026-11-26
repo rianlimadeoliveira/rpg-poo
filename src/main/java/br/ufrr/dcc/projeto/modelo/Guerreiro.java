@@ -8,6 +8,7 @@ public class Guerreiro extends Heroi {
 
     public Guerreiro(String nome, int vidaMaxima, int ataque, int forca) throws VidaInvalidaException {
         super(nome, vidaMaxima, ataque);
+        if (forca < 0) throw new IllegalArgumentException("O atributo forca nao pode ser negativo.");
         this.forca = forca;
     }
 

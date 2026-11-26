@@ -20,13 +20,13 @@ public abstract class Personagem {
         if (estaVivo()) alvo.receberDano(calcularDano());
     }
     public synchronized void receberDano(int valor) throws VidaInvalidaException {
-        if (valor < 0) throw new VidaInvalidaException("O dano nao pode ser negativo.", valor);
+        if (valor < 0) throw new VidaInvalidaException("O dano nao pode ser negativo.", vida);
         vida = Math.max(0, vida - valor);
     }
     public boolean estaVivo() { return vida > 0; }
     /** Recupera vida sem ultrapassar o limite maximo. */
     public synchronized void recuperarVida(int quantidade) throws VidaInvalidaException {
-        if (quantidade < 0) throw new VidaInvalidaException("A recuperacao nao pode ser negativa.", quantidade);
+        if (quantidade < 0) throw new VidaInvalidaException("A recuperacao nao pode ser negativa.", vida);
         vida = Math.min(vidaMaxima, vida + quantidade);
     }
     public abstract int calcularDano();
