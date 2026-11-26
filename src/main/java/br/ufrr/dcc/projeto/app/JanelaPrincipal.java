@@ -1,19 +1,31 @@
 package br.ufrr.dcc.projeto.app;
 
-import br.ufrr.dcc.projeto.modelo.*;
 import br.ufrr.dcc.projeto.excecoes.RPGException;
-import br.ufrr.dcc.projeto.excecoes.VidaInvalidaException;
+import br.ufrr.dcc.projeto.modelo.Arqueiro;
+import br.ufrr.dcc.projeto.modelo.Guerreiro;
+import br.ufrr.dcc.projeto.modelo.Heroi;
+import br.ufrr.dcc.projeto.modelo.Inimigo;
+import br.ufrr.dcc.projeto.modelo.Mago;
 import br.ufrr.dcc.projeto.repositorio.HeroiRepository;
 import br.ufrr.dcc.projeto.servico.BatalhaService;
 import java.util.Scanner;
 
+/** Interface de terminal do jogo. Toda regra de negocio fica no BatalhaService. */
 public class JanelaPrincipal {
 
-    private static final Scanner scanner = new Scanner(System.in);
-    private static final HeroiRepository repositorio = new HeroiRepository();
-    private static final BatalhaService batalhaService = new BatalhaService();
+    private final BatalhaService servico;
+    private final Scanner scanner;
+
+    public JanelaPrincipal(BatalhaService servico) {
+        this.servico = servico;
+        this.scanner = new Scanner(System.in);
+    }
 
     public static void main(String[] args) {
+        new JanelaPrincipal(new BatalhaService()).executar();
+    }
+
+    private void executar() {
         System.out.println("=== RPG POO ===");
 
         int opcao;
@@ -32,7 +44,7 @@ public class JanelaPrincipal {
                     case 1 -> criarHeroi();
                     case 2 -> listarHerois();
                     case 3 -> consultarHeroi();
-                    case 4 -> batalhar();
+                    case 4 -> exibirBatalha();
                     case 0 -> System.out.println("Obrigado por jogar!");
                     default -> System.out.println("Opcao invalida.");
                 }
@@ -44,11 +56,38 @@ public class JanelaPrincipal {
         } while (opcao != 0);
     }
 
-    private static void criarHeroi() throws VidaInvalidaException {
+    public void exibirBatalha() throws RPGException {
+        Heroi h = localizarHeroi();
+
+        if (h == null) {
+            return;
+        }
+
+        if (!h.estaVivo()) {
+            System.out.println("Este heroi esta derrotado e precisa ser recuperado antes de lutar.");
+            return;
+        }
+
+        Inimigo inimigo = new Inimigo("Goblin", 40, 5, 50, 10);
+
+        System.out.println("Um " + inimigo.getNome() + " apareceu!");
+
+        servico.iniciar(h, inimigo);
+
+        if (h.estaVivo()) {
+            System.out.println("Vitoria! XP recebido: " + inimigo.getXpRecompensa());
+        } else {
+            System.out.println("O heroi foi derrotado.");
+        }
+
+        mostrarHeroi(h);
+    }
+
+    private void criarHeroi() throws RPGException {
         System.out.print("Nome do heroi: ");
         String nome = scanner.nextLine().trim();
 
-        if (repositorio.existe(nome)) {
+        if (repositorio().existe(nome)) {
             System.out.println("Ja existe um heroi com esse nome.");
             return;
         }
@@ -76,22 +115,22 @@ public class JanelaPrincipal {
             return;
         }
 
-        repositorio.salvar(heroi);
+        servico.cadastrar(heroi);
         System.out.println("Heroi cadastrado!");
     }
 
-    private static void listarHerois() {
-        if (repositorio.quantidade() == 0) {
+    private void listarHerois() {
+        if (repositorio().quantidade() == 0) {
             System.out.println("Nenhum heroi cadastrado.");
             return;
         }
 
-        for (Heroi h : repositorio.listarTodos()) {
+        for (Heroi h : repositorio().listarTodos()) {
             mostrarHeroi(h);
         }
     }
 
-    private static void consultarHeroi() {
+    private void consultarHeroi() {
         Heroi h = localizarHeroi();
 
         if (h != null) {
@@ -99,41 +138,12 @@ public class JanelaPrincipal {
         }
     }
 
-    private static void batalhar() throws RPGException, VidaInvalidaException {
-        Heroi h = localizarHeroi();
-
-        if (h == null) {
-            return;
-        }
-
-        if (!h.estaVivo()) {
-            System.out.println("Este heroi esta derrotado e precisa ser recuperado antes de lutar.");
-            return;
-        }
-
-        int xp = 50;
-
-        Inimigo inimigo = new Inimigo("Goblin", 40, 5, xp, 10);
-
-        System.out.println("Um " + inimigo.getNome() + " apareceu!");
-
-        batalhaService.executarBatalha(h, inimigo);
-
-        if (h.estaVivo()) {
-            System.out.println("Vitoria! XP recebido: " + xp);
-        } else {
-            System.out.println("O heroi foi derrotado.");
-        }
-
-        mostrarHeroi(h);
-    }
-
-    private static Heroi localizarHeroi() {
+    private Heroi localizarHeroi() {
         System.out.print("Nome do heroi: ");
 
         String nome = scanner.nextLine().trim();
 
-        Heroi h = repositorio.buscar(nome);
+        Heroi h = repositorio().buscar(nome);
 
         if (h == null) {
             System.out.println("Heroi nao encontrado.");
@@ -142,7 +152,11 @@ public class JanelaPrincipal {
         return h;
     }
 
-    private static void mostrarHeroi(Heroi h) {
+    private HeroiRepository repositorio() {
+        return servico.getRepo();
+    }
+
+    private void mostrarHeroi(Heroi h) {
         System.out.println("\n--- " + h.getNome() + " ---");
         System.out.println("Nivel: " + h.getNivel() + " | XP: " + h.getXp());
         System.out.println("Vida: " + h.getVida() + "/" + h.getVidaMaxima());
@@ -162,7 +176,7 @@ public class JanelaPrincipal {
         }
     }
 
-    private static int lerInt(String mensagem) {
+    private int lerInt(String mensagem) {
         while (true) {
             System.out.print(mensagem);
 

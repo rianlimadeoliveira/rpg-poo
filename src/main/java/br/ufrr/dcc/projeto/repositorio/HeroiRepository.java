@@ -1,25 +1,72 @@
 package br.ufrr.dcc.projeto.repositorio;
 
+import br.ufrr.dcc.projeto.excecoes.SemEspacoException;
 import br.ufrr.dcc.projeto.modelo.Heroi;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-/** Repositorio em memoria para cadastro e consulta de herois pelo nome. */
+/** Repositorio em memoria, com limite de herois, para cadastro e consulta pelo nome. */
 public class HeroiRepository {
-    private final Map<String, Heroi> herois = new LinkedHashMap<>();
-    private String chave(String nome) { return nome == null ? "" : nome.trim().toLowerCase(); }
-    public synchronized void salvar(Heroi heroi) {
-        if (heroi == null) throw new IllegalArgumentException("O heroi nao pode ser nulo.");
-        herois.put(chave(heroi.getNome()), heroi);
+    private static final int LIMITE_PADRAO = 50;
+
+    private final List<Heroi> herois;
+    private final int limite;
+
+    public HeroiRepository() {
+        this(LIMITE_PADRAO);
     }
-    public synchronized Optional<Heroi> buscarPorNome(String nome) { return Optional.ofNullable(herois.get(chave(nome))); }
-    public synchronized Heroi buscar(String nome) { return herois.get(chave(nome)); }
-    public synchronized boolean remover(String nome) { return herois.remove(chave(nome)) != null; }
-    public synchronized List<Heroi> listarTodos() { return Collections.unmodifiableList(new ArrayList<>(herois.values())); }
-    public synchronized int quantidade() { return herois.size(); }
-    public synchronized boolean existe(String nome) { return herois.containsKey(chave(nome)); }
+
+    public HeroiRepository(int limite) {
+        if (limite <= 0) {
+            throw new IllegalArgumentException("O limite deve ser maior que zero.");
+        }
+        this.limite = limite;
+        this.herois = new ArrayList<>();
+    }
+
+    /** Salva o heroi; se ja existir um com o mesmo nome, ele e substituido. */
+    public synchronized void salvar(Heroi h) throws SemEspacoException {
+        if (h == null) {
+            throw new IllegalArgumentException("O heroi nao pode ser nulo.");
+        }
+        Heroi existente = buscar(h.getNome());
+        if (existente != null) {
+            herois.set(herois.indexOf(existente), h);
+            return;
+        }
+        if (herois.size() >= limite) {
+            throw new SemEspacoException("Limite de herois cadastrados atingido.", limite);
+        }
+        herois.add(h);
+    }
+
+    /** Busca ignorando maiusculas/minusculas e espacos nas pontas; retorna null se nao achar. */
+    public synchronized Heroi buscar(String nome) {
+        if (nome == null) {
+            return null;
+        }
+        for (Heroi h : herois) {
+            if (h.getNome().equalsIgnoreCase(nome.trim())) {
+                return h;
+            }
+        }
+        return null;
+    }
+
+    public synchronized boolean existe(String nome) {
+        return buscar(nome) != null;
+    }
+
+    public synchronized List<Heroi> listarTodos() {
+        return Collections.unmodifiableList(new ArrayList<>(herois));
+    }
+
+    public synchronized int quantidade() {
+        return herois.size();
+    }
+
+    public int getLimite() {
+        return limite;
+    }
 }

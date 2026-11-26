@@ -8,6 +8,7 @@ public class Mago extends Heroi {
 
     public Mago(String nome, int vidaMaxima, int ataque, int mana) throws VidaInvalidaException {
         super(nome, vidaMaxima, ataque);
+        if (mana < 0) throw new IllegalArgumentException("O atributo mana nao pode ser negativo.");
         this.mana = mana;
     }
 
