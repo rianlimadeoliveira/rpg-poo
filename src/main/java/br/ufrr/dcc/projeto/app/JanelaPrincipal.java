@@ -1,3 +1,5 @@
+package br.ufrr.dcc.projeto.app;
+
 import br.ufrr.dcc.projeto.modelo.*;
 import br.ufrr.dcc.projeto.excecoes.RPGException;
 import br.ufrr.dcc.projeto.excecoes.VidaInvalidaException;
