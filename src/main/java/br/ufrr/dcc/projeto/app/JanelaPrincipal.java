@@ -31,7 +31,7 @@ public class JanelaPrincipal {
                     case 0 -> System.out.println("Obrigado por jogar!");
                     default -> System.out.println("Opcao invalida.");
                 }
-            } catch (RPGException | VidaInvalidaException | IllegalArgumentException e) {
+           } catch (RPGException | IllegalArgumentException e) {
                 System.out.println("Erro: " + e.getMessage());
             }
         } while (opcao != 0);
