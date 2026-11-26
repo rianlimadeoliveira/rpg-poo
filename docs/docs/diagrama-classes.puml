@@ -1,0 +1,201 @@
+@startuml
+title RPG - Diagrama de Classes
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+package "br.ufrr.dcc.projeto.modelo" {
+  abstract class Personagem {
+    # nome : String
+    # vidaMaxima : int
+    # vida : int
+    # ataque : int
+    + Personagem(nome, vidaMaxima, ataque)
+    + atacar(alvo : Personagem) : void
+    + receberDano(valor : int) : void
+    + recuperarVida(quantidade : int) : void
+    + estaVivo() : boolean
+    {abstract} + calcularDano() : int
+    + getNome() : String
+    + getVida() : int
+    + getVidaMaxima() : int
+    + getAtaque() : int
+  }
+
+  class Heroi {
+    - nivel : int
+    - xp : int
+    - inventario : Inventario
+    - missoes : List<Missao>
+    - habilidades : List<Habilidade>
+    + ganharXp(qtd : int) : void
+    + subirNivel() : void
+    + getInventario() : Inventario
+    + adicionarMissao(missao : Missao) : void
+    + aprenderHabilidade(habilidade : Habilidade) : void
+    + aumentarAtaque(bonus : int) : void
+    + calcularDano() : int
+  }
+
+  class Guerreiro {
+    - forca : int
+    + calcularDano() : int
+    + getForca() : int
+  }
+
+  class Mago {
+    - mana : int
+    + calcularDano() : int
+    + getMana() : int
+  }
+
+  class Arqueiro {
+    - precisao : int
+    + calcularDano() : int
+    + getPrecisao() : int
+  }
+
+  class Inimigo {
+    - xpRecompensa : int
+    - ouro : int
+    + calcularDano() : int
+    + getXpRecompensa() : int
+    + getOuro() : int
+  }
+
+  class Inventario {
+    - capacidade : int
+    - itens : List<Item>
+    + adicionarItem(item : Item) : void
+    + removerItem(item : Item) : boolean
+    + buscarItem(nome : String) : Item
+    + usarItem(indice : int, heroi : Heroi) : void
+    + getItens() : List<Item>
+    + estaCheio() : boolean
+  }
+
+  abstract class Item {
+    - nome : String
+    - descricao : String
+    - valor : int
+    {abstract} + usar(heroi : Heroi) : void
+    + getNome() : String
+    + getDescricao() : String
+    + getValor() : int
+  }
+
+  class Arma {
+    - bonusAtaque : int
+    + usar(heroi : Heroi) : void
+  }
+
+  class Pocao {
+    - cura : int
+    + usar(heroi : Heroi) : void
+  }
+
+  interface Habilidade {
+    + getNome() : String
+    + executar(usuario : Heroi, alvo : Personagem) : void
+  }
+
+  class BolaDeFogo {
+    - dano : int
+    + executar(usuario : Heroi, alvo : Personagem) : void
+  }
+
+  class CuraRapida {
+    - cura : int
+    + executar(usuario : Heroi, alvo : Personagem) : void
+  }
+
+  class Missao {
+    - titulo : String
+    - xpRecompensa : int
+    - concluida : boolean
+    + concluir(heroi : Heroi) : void
+    + getTitulo() : String
+    + getXpRecompensa() : int
+    + isConcluida() : boolean
+  }
+
+  class Batalha {
+    - heroi : Heroi
+    - inimigo : Inimigo
+    - iniciada : boolean
+    - finalizada : boolean
+    + iniciar() : void
+    + executarTurno() : void
+    + isFinalizada() : boolean
+    + heroiVenceu() : boolean
+    + inimigoVenceu() : boolean
+  }
+
+  Personagem <|-- Heroi
+  Personagem <|-- Inimigo
+  Heroi <|-- Guerreiro
+  Heroi <|-- Mago
+  Heroi <|-- Arqueiro
+  Item <|-- Arma
+  Item <|-- Pocao
+  Habilidade <|.. BolaDeFogo
+  Habilidade <|.. CuraRapida
+
+  Heroi "1" *-- "1" Inventario : possui
+  Inventario "1" *-- "0..*" Item : guarda
+  Heroi "1" o-- "0..*" Missao : recebe
+  Heroi "1" o-- "0..*" Habilidade : aprende
+  Batalha "1" --> "1" Heroi : participante
+  Batalha "1" --> "1" Inimigo : oponente
+}
+
+package "br.ufrr.dcc.projeto.repositorio" {
+  class HeroiRepository {
+    - herois : Map<String, Heroi>
+    + salvar(heroi : Heroi) : void
+    + buscarPorNome(nome : String) : Optional<Heroi>
+    + buscar(nome : String) : Heroi
+    + remover(nome : String) : boolean
+    + listarTodos() : List<Heroi>
+    + quantidade() : int
+    + existe(nome : String) : boolean
+  }
+}
+
+package "br.ufrr.dcc.projeto.servico" {
+  class BatalhaService {
+    + iniciarBatalha(heroi : Heroi, inimigo : Inimigo) : Batalha
+    + executarTurno(batalha : Batalha) : void
+    + executarBatalha(heroi : Heroi, inimigo : Inimigo) : Heroi
+  }
+}
+
+package "br.ufrr.dcc.projeto.excecoes" {
+  class RPGException
+  class VidaInvalidaException
+  class ItemInvalidoException
+  class SemEspacoException
+
+  RPGException <|-- VidaInvalidaException
+  RPGException <|-- ItemInvalidoException
+  RPGException <|-- SemEspacoException
+}
+
+package "br.ufrr.dcc.projeto.app" {
+  class JanelaPrincipal
+}
+
+HeroiRepository "1" o-- "0..*" Heroi : gerencia
+BatalhaService ..> Batalha : coordena
+BatalhaService ..> Heroi
+BatalhaService ..> Inimigo
+JanelaPrincipal ..> HeroiRepository
+JanelaPrincipal ..> BatalhaService
+
+note bottom of JanelaPrincipal
+  Interface de execução pelo terminal
+  (Scanner e System.out).
+end note
+
+@enduml
